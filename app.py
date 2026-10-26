@@ -5,6 +5,8 @@ import streamlit as st
 import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import Descriptors, rdMolDescriptors, Draw
+from rdkit.Chem import AllChem
+import streamlit.components.v1 as components
 from rdkit.Chem.rdMolDescriptors import CalcTPSA
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -98,6 +100,73 @@ def analyse(s):
  im=Draw.MolToImage(m,size=(760,500)); bio=BytesIO(); im.save(bio,format='PNG')
  return dict(m=m,canonical=Chem.MolToSmiles(m,canonical=True),formula=rdMolDescriptors.CalcMolFormula(m),mw=Descriptors.MolWt(m),exact=Descriptors.ExactMolWt(m),logp=Descriptors.MolLogP(m),tpsa=CalcTPSA(m),hbd=rdMolDescriptors.CalcNumHBD(m),hba=rdMolDescriptors.CalcNumHBA(m),rot=rdMolDescriptors.CalcNumRotatableBonds(m),rings=rdMolDescriptors.CalcNumRings(m),charge=Chem.GetFormalCharge(m),chiral=len(Chem.FindMolChiralCenters(m,includeUnassigned=True)),heavy=m.GetNumHeavyAtoms(),bonds=bc,png=bio.getvalue())
 
+def make_3d_viewer(smiles, height=480):
+    mol = Chem.MolFromSmiles(smiles)
+
+    if mol is None:
+        st.error("Invalid molecular structure.")
+        return
+
+    mol = Chem.AddHs(mol)
+    params = AllChem.ETKDGv3()
+    params.randomSeed = 42
+
+    result = AllChem.EmbedMolecule(mol, params)
+
+    if result != 0:
+        st.warning("Could not generate a 3D conformation.")
+        return
+
+    if AllChem.MMFFHasAllMoleculeParams(mol):
+        AllChem.MMFFOptimizeMolecule(mol)
+    else:
+        AllChem.UFFOptimizeMolecule(mol)
+
+    mol_block = Chem.MolToMolBlock(mol)
+    mol_json = json.dumps(mol_block)
+
+    html = f"""
+    <div id="mol-viewer"
+         style="width:100%; height:{height}px;
+                background:#ffffff;
+                border:1px solid #d7ded7;
+                border-radius:14px;">
+    </div>
+
+    <script src="https://3dmol.org/build/3Dmol-min.js"></script>
+    <script>
+    const molData = {mol_json};
+
+    function renderMolecule() {{
+        const element = document.getElementById("mol-viewer");
+
+        if (!window.$3Dmol) {{
+            element.innerHTML =
+              "3D viewer could not load. Check your internet connection.";
+            return;
+        }}
+
+        const viewer = $3Dmol.createViewer(element, {{
+            backgroundColor: "white"
+        }});
+
+        viewer.addModel(molData, "mol");
+        viewer.setStyle({{}}, {{
+            stick: {{radius: 0.14}},
+            sphere: {{scale: 0.23}}
+        }});
+
+        viewer.zoomTo();
+        viewer.render();
+        viewer.zoom(0.9);
+    }}
+
+    renderMolecule();
+    </script>
+    """
+
+    components.html(html, height=height + 20, scrolling=False)
+
 if mode=='Custom SMILES' and not smiles.strip(): st.info('Paste a SMILES string in the sidebar to start.'); st.stop()
 r=analyse(smiles)
 if r is None: st.error('SMILES could not be parsed. Check the string and try again.'); st.stop()
@@ -115,9 +184,46 @@ cols=st.columns(4)
 for c,l,v in zip(cols,['MOLECULAR FORMULA','MOLAR MASS','HEAVY ATOMS','RING COUNT'],[r['formula'],f"{r['mw']:.3f} g/mol",str(r['heavy']),str(r['rings'])]): c.markdown(f'<div class="spec"><div class="lab">{l}</div><div class="val">{v}</div></div>',unsafe_allow_html=True)
 st.write('')
 t1,t2,t3,t4=st.tabs(['Structure board','Property fingerprint','Chemistry notes','Export dossier'])
+
 with t1:
- a,b=st.columns([1.1,.9]); a.image(r['png'],use_container_width=True,caption='2D depiction generated from parsed SMILES')
- b.markdown('#### Input SMILES'); b.code(smiles); b.markdown('#### Canonical SMILES'); b.code(r['canonical']); b.markdown('#### Bond census'); b.dataframe(pd.DataFrame([{'Bond type':k,'Count':v} for k,v in r['bonds'].items() if v]),hide_index=True,use_container_width=True); b.markdown('#### Geometry note'); b.write(meta['angle'])
+    st.markdown("#### Interactive 3D structure")
+    st.caption(
+        "Drag to rotate • Scroll to zoom • "
+        "Generated from the input SMILES"
+    )
+
+    make_3d_viewer(smiles)
+
+    st.divider()
+    st.markdown("#### 2D structure")
+
+    a, b = st.columns([1.1, 0.9])
+
+    a.image(
+        r["png"],
+        use_container_width=True,
+        caption="2D molecular structure"
+    )
+
+    b.markdown("#### Input SMILES")
+    b.code(smiles)
+
+    b.markdown("#### Canonical SMILES")
+    b.code(r["canonical"])
+
+    b.markdown("#### Bond census")
+    b.dataframe(
+        pd.DataFrame([
+            {"Bond type": k, "Count": v}
+            for k, v in r["bonds"].items() if v
+        ]),
+        hide_index=True,
+        use_container_width=True
+    )
+
+    b.markdown("#### Geometry note")
+    b.write(meta["angle"])
+
 with t2:
  st.markdown('#### Calculated fingerprint'); cols=st.columns(4)
  for c,l,v in zip(cols,['Exact mass','LogP estimate','Polar surface','Formal charge'],[f"{r['exact']:.5f} Da",f"{r['logp']:.2f}",f"{r['tpsa']:.1f} Å²",str(r['charge'])]): c.metric(l,v)
