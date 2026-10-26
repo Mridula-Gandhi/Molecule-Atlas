@@ -17,6 +17,54 @@ st.markdown('''<style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 html,body,[class*="css"]{font-family:'DM Sans',sans-serif}.stApp{background:#f4f2ec;color:#17231f}.block-container{max-width:1320px;padding-top:1.5rem}
 .atlas{background:#182d27;color:#f7f4eb;padding:1.6rem 1.8rem;border-radius:7px 26px 7px 26px}.kicker{font-family:'DM Mono',monospace;color:#c8e56a;font-size:.72rem;letter-spacing:.17em}.atlas h1{font-family:'Space Grotesk',sans-serif;font-size:2.6rem;margin:.3rem 0;color:#f7f4eb}.atlas p{color:#d1d8d0;margin:0}.spec{background:#fffdf7;border:1px solid #deded3;border-radius:15px;padding:1rem;min-height:90px}.lab{color:#65736a;text-transform:uppercase;letter-spacing:.12em;font-family:'DM Mono',monospace;font-size:.68rem}.val{color:#182d27;font-family:'Space Grotesk',sans-serif;font-size:1.3rem;font-weight:700;margin-top:.35rem}div[data-testid="stMetric"]{background:#fffdf7;border:1px solid #deded3;padding:12px;border-radius:13px}
+
+/* Improve readability throughout the app */
+.stApp {
+    background: #f4f2ec !important;
+    color: #182d27 !important;
+}
+
+.stApp p,
+.stApp label,
+.stApp [data-testid="stMarkdownContainer"],
+.stApp [data-testid="stMetricLabel"],
+.stApp [data-testid="stMetricValue"] {
+    color: #182d27 !important;
+}
+
+.stApp input,
+.stApp textarea,
+.stApp [data-baseweb="select"] {
+    color: #182d27 !important;
+    background: #ffffff !important;
+}
+
+div[data-testid="stMetric"] {
+    background: #ffffff !important;
+    border: 1px solid #c8d1c8 !important;
+    border-radius: 12px;
+}
+
+.spec {
+    background: #ffffff !important;
+    border: 1px solid #c8d1c8 !important;
+}
+
+.lab {
+    color: #52645a !important;
+}
+
+.val {
+    color: #182d27 !important;
+}
+
+.stTabs [data-baseweb="tab"] {
+    color: #263b32 !important;
+}
+
+.stTabs [aria-selected="true"] {
+    color: #176b50 !important;
+}
 </style>''', unsafe_allow_html=True)
 st.markdown('''<div class="atlas"><div class="kicker">FIELD NOTES / ORGANIC CHEMISTRY / VOL. 01</div><h1>MOLECULE ATLAS<span style="color:#c8e56a">.</span></h1><p>A visual chemistry notebook for exploring structure, molecular fingerprints, functional groups and compound context — with a student-ready dossier export.</p></div>''', unsafe_allow_html=True)
 st.write('')
